@@ -73,8 +73,11 @@ sed -i -e 's/&lt;/</g' $outputfile
 echo finished compiling outpputfile
 
 #cut this file into files of specified length (default 3000)
-split outputfile "toupload_" -l $(($uploadsize)) -d
+split outputfile "to_upload/toupload_" -l $(($uploadsize)) -d
 
+for file in to_upload/*; do
+    mv $file "$file.csv"
+done
 
 ##more management
 #sort -k4 -n -t, outputfile > lengthsort #sorts the code based on song length if you want to know - i just used this to help with my spotify code descision making
