@@ -1,0 +1,80 @@
+#!/bin/bash
+
+#google play to lastfm
+#runs in the folder with gplay data downloads and modifies the data accordingly
+
+#set size to make files toupload
+uploadsize=3000
+
+if [[ -z $1 ]]; then
+    outputfile=outputfile
+else
+    outputfile=$1
+fi
+
+songcount=0
+linecount=0
+
+for file in *.csv; do
+
+    #echo $file
+    songcount=$((songcount + 1))
+    
+    line=$(awk 'NR >= 2 { print }' < "$file") #assign second line to variable
+    #echo $line
+    
+    #complex parse - extract playcount
+    pc=$(gawk '
+    BEGIN {
+        FPAT = "([^,]+)|(\"[^\"]+\")" #complex delimiter stuff
+        OFS = "," #output field seperator
+    }
+    {
+    if ($1 != "Title") # Do not forget to skip the header line! - does this work for songs that are titled Title?
+    {         
+        #title=$1
+        #album=$2
+        #artist=$3
+        #durationms=$4
+        playcount=$6        
+        
+        #print out to variable
+        { print playcount}
+    }
+    }
+    END {
+        {}
+    }
+    ' "$file")
+    
+    #playcount be like
+    pc="${pc%\"}"
+    pc="${pc#\"}"
+    
+    while [[ $pc > 0 ]]; do
+        linecount=$((linecount + 1))
+        #append line to file
+        echo $line >> $outputfile
+        pc=$(($pc - 1))
+    done
+
+done
+
+echo songs: $songcount
+echo lines: $linecount
+
+#replace shitty formatting from gplay
+sed -i -e 's/&#39;/'\''/g' $outputfile
+sed -i -e 's/&quot;/"/g' $outputfile
+sed -i -e 's/&amp;/\&/g' $outputfile
+sed -i -e 's/&gt;/>/g' $outputfile
+sed -i -e 's/&lt;/</g' $outputfile
+
+echo finished compiling outpputfile
+
+#cut this file into files of specified length (default 3000)
+split outputfile "toupload_" -l $(($uploadsize)) -d
+
+
+##more management
+#sort -k4 -n -t, outputfile > lengthsort #sorts the code based on song length if you want to know - i just used this to help with my spotify code descision making
