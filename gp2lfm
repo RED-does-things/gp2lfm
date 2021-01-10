@@ -5,6 +5,7 @@
 
 #set size to make files toupload
 uploadsize=3000
+rm outputfile #how was this not always here lmao
 
 if [[ -z $1 ]]; then
     outputfile=outputfile
@@ -73,10 +74,11 @@ sed -i -e 's/&lt;/</g' $outputfile
 echo finished compiling outpputfile
 
 #cut this file into files of specified length (default 3000)
-split outputfile "to_upload/toupload_" -l $(($uploadsize)) -d
+mkdir toupload
+split outputfile "toupload_" -l $(($uploadsize)) -d
 
-for file in to_upload/*; do
-    mv $file "$file.csv"
+for file in toupload_*; do
+    mv $file "toupload/$file.csv"
 done
 
 ##more management
