@@ -5,13 +5,14 @@
 
 #set size to make files toupload
 uploadsize=3000
-rm outputfile #how was this not always here lmao
 
 if [[ -z $1 ]]; then
     outputfile=outputfile
 else
     outputfile=$1
 fi
+touch outputfile
+rm outputfile #how was this not always here lmao
 
 songcount=0
 linecount=0
@@ -24,6 +25,80 @@ for file in *.csv; do
     line=$(awk 'NR >= 2 { print }' < "$file") #assign second line to variable
     #echo $line
     
+    #parse and remove quotations around everything
+    #extract title
+    title=$(gawk '
+    BEGIN {
+        FPAT = "([^,]+)|(\"[^\"]+\")" #complex delimiter stuff
+        OFS = "," #output field seperator
+    }
+    {
+    if ($1 != "Title") #skip header line as long as song isnt called "Title"
+    {         
+        title=$1
+        { print title}
+    }
+    }
+    ' "$file")
+    title="${title%\"}"
+    title="${title#\"}"
+    
+    #extract album
+    album=$(gawk '
+    BEGIN {
+        FPAT = "([^,]+)|(\"[^\"]+\")" #complex delimiter stuff
+        OFS = "," #output field seperator
+    }
+    {
+    if ($1 != "Title") #skip header line as long as song isnt called "Title"
+    {         
+        album=$2
+        { print album}
+    }
+    }
+    ' "$file")
+    
+    album="${album%\"}"
+    album="${album#\"}"
+    
+    #extract artist
+    artist=$(gawk '
+    BEGIN {
+        FPAT = "([^,]+)|(\"[^\"]+\")" #complex delimiter stuff
+        OFS = "," #output field seperator
+    }
+    {
+    if ($1 != "Title") #skip header line as long as song isnt called "Title"
+    {         
+        artist=$3
+        { print artist}
+    }
+    }
+    ' "$file")
+    
+    #everything be like
+    artist="${artist%\"}"
+    artist="${artist#\"}"
+
+    #extract duration
+    durationms=$(gawk '
+    BEGIN {
+        FPAT = "([^,]+)|(\"[^\"]+\")" #complex delimiter stuff
+        OFS = "," #output field seperator
+    }
+    {
+    if ($1 != "Title") #skip header line as long as song isnt called "Title"
+    {         
+        dms=$4
+        { print dms}
+    }
+    }
+    ' "$file")
+    
+    #everything be like
+    durationms="${durationms%\"}"
+    durationms="${durationms#\"}"
+    
     #complex parse - extract playcount
     pc=$(gawk '
     BEGIN {
@@ -33,25 +108,21 @@ for file in *.csv; do
     {
     if ($1 != "Title") # Do not forget to skip the header line! - does this work for songs that are titled Title?
     {         
-        #title=$1
-        #album=$2
-        #artist=$3
-        #durationms=$4
-        playcount=$6        
+        playcount=$6
         
         #print out to variable
         { print playcount}
     }
-    }
-    END {
-        {}
     }
     ' "$file")
     
     #playcount be like
     pc="${pc%\"}"
     pc="${pc#\"}"
-    
+
+    #concatenate strings (in this case its a good thing the encodings messed up and they don't have quotes
+    line="$title,$album,$artist,$durationms,$pc"
+
     while [[ $pc > 0 ]]; do
         linecount=$((linecount + 1))
         #append line to file
