@@ -13,6 +13,7 @@ else
 fi
 touch outputfile
 rm outputfile #how was this not always here lmao
+rm removedlines
 
 songcount=0
 linecount=0
@@ -142,10 +143,27 @@ sed -i -e 's/&amp;/\&/g' $outputfile
 sed -i -e 's/&gt;/>/g' $outputfile
 sed -i -e 's/&lt;/</g' $outputfile
 
-echo finished compiling outpputfile
+echo "fixed formatting in outpputfile"
+
+#remove podcasts or whatever
+declare -a todelete=("default thing to delete yo, I hope you don't have a song with this name"
+                     #"Replace"
+                     #"And Uncomment"
+                     #"These Strings"
+                     )
+
+for shittodelete in "${todelete[@]}"; do {
+    echo "seperating $shittodelete ... lines moved: "
+    grep -i "$shittodelete" $outputfile | wc -l
+    
+    grep -v -i "$shittodelete" $outputfile > temp         #takes the songs that do not have the string defined above
+    grep -i "$shittodelete" $outputfile >> removedlines   #adds the lines that have the filtered words to new file
+    mv temp $outputfile                                   #overwrite previous file with the new filtered one. can change 'mv' to 'cp' if you want to check intermediate temp file
+    
+} done
 
 #cut this file into files of specified length (default 3000)
-mkdir toupload
+mkdir -p toupload
 split outputfile "toupload_" -l $(($uploadsize)) -d
 
 for file in toupload_*; do
