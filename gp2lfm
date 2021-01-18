@@ -12,8 +12,8 @@ else
     outputfile=$1
 fi
 touch outputfile
-rm outputfile #how was this not always here lmao
-rm removedlines
+rm -f outputfile #how was this not always here lmao
+rm -f removedlines
 
 songcount=0
 linecount=0
@@ -161,6 +161,12 @@ for shittodelete in "${todelete[@]}"; do {
     mv temp $outputfile                                   #overwrite previous file with the new filtered one. can change 'mv' to 'cp' if you want to check intermediate temp file
     
 } done
+
+#
+linenum=$(wc -l < outputfile)
+echo "Total number of lines: $linenum"
+num=$((($(($linenum-1))/$uploadsize)+1))
+echo "This will take $num days to upload"
 
 #cut this file into files of specified length (default 3000)
 mkdir -p toupload
