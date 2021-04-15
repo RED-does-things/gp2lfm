@@ -7,101 +7,32 @@
 uploadsize=3000
 
 if [[ -z $1 ]]; then
-    outputfile=outputfile
+    outputdir=outputdir
 else
-    outputfile=$1
+    outputdir=$1
 fi
-touch outputfile
-rm -f outputfile #how was this not always here lmao
-rm -f removedlines
+
+rm -rf $outputdir
+touch outputfile; rm outputfile
+mkdir $outputdir
 
 songcount=0
 linecount=0
 
+#for each file...
 for file in *.csv; do
 
-    #echo $file
+    #count how many songs are processed
     songcount=$((songcount + 1))
     
-    line=$(awk 'NR >= 2 { print }' < "$file") #assign second line to variable
-    #echo $line
-    
-    #parse and remove quotations around everything
-    #extract title
-    title=$(gawk '
-    BEGIN {
-        FPAT = "([^,]+)|(\"[^\"]+\")" #complex delimiter stuff
-        OFS = "," #output field seperator
-    }
-    {
-    if ($1 != "Title") #skip header line as long as song isnt called "Title"
-    {         
-        title=$1
-        { print title}
-    }
-    }
-    ' "$file")
-    title="${title%\"}"
-    title="${title#\"}"
-    
-    #extract album
-    album=$(gawk '
-    BEGIN {
-        FPAT = "([^,]+)|(\"[^\"]+\")" #complex delimiter stuff
-        OFS = "," #output field seperator
-    }
-    {
-    if ($1 != "Title") #skip header line as long as song isnt called "Title"
-    {         
-        album=$2
-        { print album}
-    }
-    }
-    ' "$file")
-    
-    album="${album%\"}"
-    album="${album#\"}"
-    
-    #extract artist
-    artist=$(gawk '
-    BEGIN {
-        FPAT = "([^,]+)|(\"[^\"]+\")" #complex delimiter stuff
-        OFS = "," #output field seperator
-    }
-    {
-    if ($1 != "Title") #skip header line as long as song isnt called "Title"
-    {         
-        artist=$3
-        { print artist}
-    }
-    }
-    ' "$file")
-    
-    #everything be like
-    artist="${artist%\"}"
-    artist="${artist#\"}"
+    line=$(awk 'NR >= 2 { print }' < "$file") #assign second line of the file to variable
 
-    #extract duration
-    durationms=$(gawk '
-    BEGIN {
-        FPAT = "([^,]+)|(\"[^\"]+\")" #complex delimiter stuff
-        OFS = "," #output field seperator
-    }
-    {
-    if ($1 != "Title") #skip header line as long as song isnt called "Title"
-    {         
-        dms=$4
-        { print dms}
-    }
-    }
-    ' "$file")
+    #create file that has one of each line
+    echo $line >> 1_allsongs
     
-    #everything be like
-    durationms="${durationms%\"}"
-    durationms="${durationms#\"}"
-    
+    #create file that we will be working with
     #complex parse - extract playcount
-    pc=$(gawk '
+    playcount=$(gawk '
     BEGIN {
         FPAT = "([^,]+)|(\"[^\"]+\")" #complex delimiter stuff
         OFS = "," #output field seperator
@@ -109,44 +40,85 @@ for file in *.csv; do
     {
     if ($1 != "Title") # Do not forget to skip the header line! - does this work for songs that are titled Title?
     {         
-        playcount=$6
+        #title=$1
+        #album=$2
+        #artist=$3
+        #durationms=$4
+        playcount=$6        
         
         #print out to variable
         { print playcount}
     }
     }
+    END {
+        {}
+    }
     ' "$file")
     
     #playcount be like
+    pc=$playcount
     pc="${pc%\"}"
     pc="${pc#\"}"
-
-    #concatenate strings (in this case its a good thing the encodings messed up and they don't have quotes
-    line="$title,$album,$artist,$durationms,$pc"
-
+    
+    #TODO remove leading and trailing quotations
+    line="${line%\"}"
+    line="${line#\"}"
+    
+    #append line to file
     while [[ $pc > 0 ]]; do
         linecount=$((linecount + 1))
-        #append line to file
-        echo $line >> $outputfile
+        
+        echo $line >> outputfile
         pc=$(($pc - 1))
     done
-
 done
 
 echo songs: $songcount
 echo lines: $linecount
 
-#replace shitty formatting from gplay
-sed -i -e 's/&#39;/'\''/g' $outputfile
-sed -i -e 's/&quot;/"/g' $outputfile
-sed -i -e 's/&amp;/\&/g' $outputfile
-sed -i -e 's/&gt;/>/g' $outputfile
-sed -i -e 's/&lt;/</g' $outputfile
+#move to specified directory where all the file processing will be
+mv 1_allsongs ${outputdir}"/1_allsongs"
+mv outputfile ${outputdir}"/outputfile"
+cd outputdir
 
-echo "fixed formatting in outpputfile"
+#for loop for all this sed stuff?
+declare -a toreplace=("\",\"" #first is the delimiter "," to utf8 null
+                     "&#39;"
+                     "&quot;"
+                     "&amp;"
+                     "&gt;"
+                     "&lt;"
+                     #add more lines if you want
+                     )
+declare -a replacewith=("$(printf '\x01')" #since some songs might have � in the title, only dif is dolphin filebroswer likes it more. As it is just gotta "open with" and select program if u wanna open it. 
+                     "'"                                    #Already had to do that in windows since i dont use file extensions so idk if it makes a difference there. Either way it will work perfectly in scrubbler so its no biggie
+                     "\""
+                     "\&"
+                     ">"
+                     "<"
+                     #add more lines if you want - can do  custom formatting here. Replace "Arianna Grande" with "Meshuggah
+                     )
+arraylength=${#toreplace[@]}
+i=0
+while [ $i -lt $arraylength ]; do {
+    sed -i s/${toreplace[i]}/${replacewith[i]}/g outputfile
+    echo replaced "${toreplace[i]}" with "${replacewith[i]}"
+    ((i++))
+} done
 
+#replace shitty formatting from gplay - OLD version
+#sed -i -e 's/&#39;/'\''/g' outputfile
+#sed -i -e 's/&quot;/"/g' outputfile #TODO do this whole section later? need to seperate the lines with quotes? -ya
+#sed -i -e 's/&amp;/\&/g' outputfile
+#sed -i -e 's/&gt;/>/g' outputfile
+sed -i -e 's/&lt;/</g' outputfile
+#TODO add replace "," with unicode null
+
+echo "fixed formatting in outputfile"
+
+#TODO rename these files so they are in nomenclature - nvm fuck it itll just be called outputfile all the way through. if you wanna check a step then add the line yourself, everything works now
 #remove podcasts or whatever
-declare -a todelete=("default thing to delete yo, I hope you don't have a song with this name"
+declare -a todelete=(""default thing to delete yo, I hope you don't have a song with this name""
                      #"Replace"
                      #"And Uncomment"
                      #"These Strings"
@@ -154,15 +126,15 @@ declare -a todelete=("default thing to delete yo, I hope you don't have a song w
 
 for shittodelete in "${todelete[@]}"; do {
     echo "seperating $shittodelete ... lines moved: "
-    grep -i "$shittodelete" $outputfile | wc -l
+    grep -i "$shittodelete" outputfile | wc -l
     
-    grep -v -i "$shittodelete" $outputfile > temp         #takes the songs that do not have the string defined above
-    grep -i "$shittodelete" $outputfile >> removedlines   #adds the lines that have the filtered words to new file
-    mv temp $outputfile                                   #overwrite previous file with the new filtered one. can change 'mv' to 'cp' if you want to check intermediate temp file
+    grep -v -i "$shittodelete" outputfile > temp         #takes the songs that do not have the string defined above
+    grep -i "$shittodelete" outputfile >> removedlines   #adds the lines that have the filtered words to new file
+    mv temp outputfile                                   #overwrite previous file with the new filtered one. can change 'mv' to 'cp' if you want to check intermediate temp file
     
 } done
 
-#
+#command line output
 linenum=$(wc -l < outputfile)
 echo "Total number of lines: $linenum"
 num=$((($(($linenum-1))/$uploadsize)+1))
@@ -171,10 +143,12 @@ echo "This will take $num days to upload"
 #cut this file into files of specified length (default 3000)
 mkdir -p toupload
 split outputfile "toupload_" -l $(($uploadsize)) -d
-
 for file in toupload_*; do
     mv $file "toupload/$file.csv"
 done
 
 ##more management
 #sort -k4 -n -t, outputfile > lengthsort #sorts the code based on song length if you want to know - i just used this to help with my spotify code descision making
+
+
+
