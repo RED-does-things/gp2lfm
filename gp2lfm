@@ -88,11 +88,11 @@ declare -a toreplace=("\",\"" #first is the delimiter "," to utf8 null
                      "&amp;"
                      "&gt;"
                      "&lt;"
-                     #add more lines if you want
+                     #add more lines if you want **USE � as DELIMITER SINCE THAT HAS BEEN CHANGED ABOVE ALREADY**
                      )
-declare -a replacewith=("$(printf '\x01')" #since some songs might have � in the title, only dif is dolphin filebroswer likes it more. As it is just gotta "open with" and select program if u wanna open it. 
-                     "'"                                    #Already had to do that in windows since i dont use file extensions so idk if it makes a difference there. Either way it will work perfectly in scrubbler so its no biggie
-                     "\""
+declare -a replacewith=("�" #might have to use output of printf '\x00' to create null char? or this is good enough maybe? TO USE ANOTHER CHAR USE THE UTF8 CODE: $(printf '\x01') <-- USE THIS IF YOUR SONGS HAVE � in the title, 
+                     "'"                                    #only dif is dolphin filebroswer doesnt like it as much. just gotta "open with" and select program if u wanna open it. Already had to do that in windows since i dont use
+                     "\""                                   #file extensions so idk if it makes a difference there. Either way it will work perfectly in scrubbler so its no biggie. note this might change further substitutions -thats why i use �
                      "\&"
                      ">"
                      "<"
@@ -101,24 +101,16 @@ declare -a replacewith=("$(printf '\x01')" #since some songs might have � in t
 arraylength=${#toreplace[@]}
 i=0
 while [ $i -lt $arraylength ]; do {
-    sed -i s/${toreplace[i]}/${replacewith[i]}/g outputfile
+    sed -i "s/${toreplace[i]}/${replacewith[i]}/g" outputfile
     echo replaced "${toreplace[i]}" with "${replacewith[i]}"
     ((i++))
 } done
-
-#replace shitty formatting from gplay - OLD version
-#sed -i -e 's/&#39;/'\''/g' outputfile
-#sed -i -e 's/&quot;/"/g' outputfile #TODO do this whole section later? need to seperate the lines with quotes? -ya
-#sed -i -e 's/&amp;/\&/g' outputfile
-#sed -i -e 's/&gt;/>/g' outputfile
-sed -i -e 's/&lt;/</g' outputfile
-#TODO add replace "," with unicode null
 
 echo "fixed formatting in outputfile"
 
 #TODO rename these files so they are in nomenclature - nvm fuck it itll just be called outputfile all the way through. if you wanna check a step then add the line yourself, everything works now
 #remove podcasts or whatever
-declare -a todelete=(""default thing to delete yo, I hope you don't have a song with this name""
+declare -a todelete=("default thing to delete yo, I hope you don't have a song with this name"
                      #"Replace"
                      #"And Uncomment"
                      #"These Strings"
