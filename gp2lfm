@@ -18,6 +18,7 @@ mkdir $outputdir
 
 songcount=0
 linecount=0
+half=1
 
 #for each file...
 for file in *.csv; do
@@ -64,14 +65,25 @@ for file in *.csv; do
     line="${line%\"}"
     line="${line#\"}"
     
+    if [ $half -eq 1 ]; then
+        filename=outputfileA
+        half=0
+    else
+        filename=outputfileB
+        half=1
+    fi
     #append line to file
     while [[ $pc > 0 ]]; do
         linecount=$((linecount + 1))
+        echo $line >> $filename
         
-        echo $line >> outputfile
         pc=$(($pc - 1))
     done
 done
+
+cat outputfileB >> outputfileA
+rm outputfileB
+mv outputfileA outputfile
 
 echo songs: $songcount
 echo lines: $linecount
@@ -88,7 +100,43 @@ declare -a toreplace=("\",\"" #first is the delimiter "," to utf8 null
                      "&amp;"
                      "&gt;"
                      "&lt;"
-                     #add more lines if you want **USE � as DELIMITER SINCE THAT HAS BEEN CHANGED ABOVE ALREADY**
+                     #add more lines if you want
+                     "02 Kein Benz"
+                     "03 Allein"
+                     "04 Immer da"
+                     "07 Hi Kids"
+                     "09 Geht gut"
+                     #"18 - Stererfreie Ware"
+                     #"19 - Outro"
+                     #"20 - Bouns - Der erste Druck"
+                     #"21 - Plus - Narcotic"
+                     #"22 - Extra - Fick"
+                     "1st samurai�departure�Nujabes + Fat Jon"
+                     "624 part1�departure�Nujabes, Fat Jon"
+                     "624 part2�departure�Nujabes + Fat Jon"
+                     "aruarian dance�departure�Nujabes, Fat Jon"
+                     "ask�departure�Nujabes + Fat Jon"
+                     "battlecry�departure�Nujabes feat. Shing02"
+                     "chambers�departure�Nujabes + Fat Jon"
+                     "funkin�departure�Nujabes + Fat Jon"
+                     "genome�departure�Nujabes + Fat Jon"
+                     "how you feel�departure�Nujabes + Fat Jon"
+                     "mystline�departure�Nujabes + Fat Jon"
+                     "no way back�departure�Nujabes + Fat Jon"
+                     "ole�departure�Nujabes + Fat Jon"
+                     "stay�departure�Nujabes + Fat Jon"
+                     "the space between two world�departure�Nujabes + Fat Jon"
+                     "transcendence�departure�Nujabes + Fat Jon"
+                     #more from figuring out whats not working
+                     "Unknown Artist"
+                     "Coeur de pirate"
+                     "Im not Jesus"
+                     "Everybody Wants To Rule The World (From “The Hunger Games: Catching Fire” Soundtrack)"
+                     "All the Kings Horses"
+                     "�Smashing Pumpkins"
+                     "Down with the Fallen "
+                     "Careless Wisper"
+                     "Comin In Hot"
                      )
 declare -a replacewith=("�" #might have to use output of printf '\x00' to create null char? or this is good enough maybe? TO USE ANOTHER CHAR USE THE UTF8 CODE: $(printf '\x01') <-- USE THIS IF YOUR SONGS HAVE � in the title, 
                      "'"                                    #only dif is dolphin filebroswer doesnt like it as much. just gotta "open with" and select program if u wanna open it. Already had to do that in windows since i dont use
@@ -97,6 +145,42 @@ declare -a replacewith=("�" #might have to use output of printf '\x00' to crea
                      ">"
                      "<"
                      #add more lines if you want - can do  custom formatting here. Replace "Arianna Grande" with "Meshuggah
+                     "Kein Benz"
+                     "Allein"
+                     "Immer da"
+                     "Hi Kids"
+                     "Geht gut"
+                     #"Stererfreie Ware"
+                     #"Outro"
+                     #"Bouns - Der erste Druck"
+                     #"Plus - Narcotic"
+                     #"Extra - Fick"
+                     "1st samurai�departure�Nujabes"
+                     "624 part1�departure�Fat Jon"
+                     "624 part2�departure�Fat Jon"
+                     "aruarian dance�departure�Nujabes"
+                     "ask�departure�Fat Jon"
+                     "battlecry�departure�Nujabes feat. Shing02"
+                     "chambers�departure�Fat Jon"
+                     "funkin�departure�Fat Jon"
+                     "genome�departure�Fat Jon"
+                     "how you feel�departure�Fat Jon"
+                     "mystline�departure�Nujabes"
+                     "no way back�departure�Fat Jon"
+                     "ole�departure�Fat Jon"
+                     "stay�departure�Fat Jon"
+                     "the space between two world�departure�Nujabes"
+                     "transcendence�departure�Nujabes"
+                     #more
+                     "Two Steps from Hell"
+                     "Cœur de pirate"
+                     "I'm not Jesus"
+                     "Everybody Wants to Rule the World"
+                     "All the King's Horses"
+                     "�The Smashing Pumpkins"
+                     "Down with the Fallen"
+                     "Careless Whisper"
+                     "Comin' In Hot"
                      )
 arraylength=${#toreplace[@]}
 i=0
@@ -110,7 +194,7 @@ echo "fixed formatting in outputfile"
 
 #TODO rename these files so they are in nomenclature - nvm fuck it itll just be called outputfile all the way through. if you wanna check a step then add the line yourself, everything works now
 #remove podcasts or whatever
-declare -a todelete=("default thing to delete yo, I hope you don't have a song with this name"
+declare -a todelete=("TTMIK"
                      #"Replace"
                      #"And Uncomment"
                      #"These Strings"
@@ -142,5 +226,5 @@ done
 ##more management
 #sort -k4 -n -t, outputfile > lengthsort #sorts the code based on song length if you want to know - i just used this to help with my spotify code descision making
 
-
-
+## create debugfile
+cat outputfile | uniq > debugfile
